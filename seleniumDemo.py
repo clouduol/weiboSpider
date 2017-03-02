@@ -74,7 +74,7 @@ finally:
 #print("------ after redirect ------")
 #print(driver.page_source)
 
-## implicit wait
+## wait for event presence 
 #from selenium.webdriver.common.by import By
 #from selenium.webdriver.support.wait import WebDriverWait
 #from selenium.webdriver.support import expected_conditions as EC
@@ -89,7 +89,7 @@ finally:
 #    print(driver.find_element_by_css_selector("#content").text)
 #    driver.close()
 
-## explicit wait
+## wait a fixed time
 #driver =\
 #webdriver.PhantomJS(executable_path='/home/guoyunlong/Software/phantomjs-2.1.1-linux-x86_64/bin/phantomjs')
 #
