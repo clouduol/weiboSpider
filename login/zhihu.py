@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # login zhihu
 # https email+password ajax
+# extra function: get user nick name
 import requests
 import re
 import time

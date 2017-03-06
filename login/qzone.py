@@ -4,6 +4,7 @@
 # http qq+password ajax encryption
 # Tencent login encryption flow is complex,
 # so use cookie to login
+# extra function:get qzone title and shuoshuo in the index page
 
 import requests
 import os
