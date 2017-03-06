@@ -50,7 +50,13 @@ class Qzone(object):
             self.headers['Cookie'] = self.cookies
             self.session.headers = self.headers
             print("Load cookies from %s successfully!" % self.cookie_file)
-            return 0
+            r = self.session.get(self.qzone_url)
+            print(r.url)
+            if r.url == self.qzone_url:
+                return 0
+            else:
+                print("Try to login %s failed. Test blocked" % self.qzone_url)
+                return -1
         else:
             print("Can't find %s, please create it first!" % self.cookie_file)
             return -1
@@ -108,6 +114,8 @@ if __name__ == "__main__":
         print("Get shuoshuo failed.")
     else:
         print("Get shuoshuo successfull!.")
+        ssid = 1
         for qzone_ssentity in qzone_sslist:
-            print(qzone_ssentity[0]+":\t\t"+qzone_ssentity[1])
-
+            print("[%s]" % str(ssid)
+                  +qzone_ssentity[0]+":\t\t"+qzone_ssentity[1])
+            ssid += 1
