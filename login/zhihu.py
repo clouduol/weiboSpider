@@ -11,12 +11,12 @@ import sys
 
 class Zhihu(object):
     # object data, public
-    email = ""         # user email
-    password = ""     # password
-    xsrf = ""         # xsrf value
+    email = None         # user email
+    password = None     # password
+    xsrf = None         # xsrf value
     # xsrf regular expression
     reg_xsrf = r"<input.*?name=\"_xsrf\".*?value=\"(.*?)\".*?>"
-    data = ""         # login post data
+    data = None         # login post data
     # request header
     # every request should set User-Agent;if user-Agent is requests default, response is 500
     headers={"User-Agent":"Mozilla/5.0 (X11; Ubuntu; Linux x86_64;rv:51.0) Gecko/20100101 Firefox/51.0",
@@ -24,14 +24,14 @@ class Zhihu(object):
                   "Accept-Language":"zh,en-US;q=0.7,en;q=0.3",
                   "Accept-Encoding":"gzip, deflate, br",
                   "Connection":"keep-alive"}
-    session = ""      # requests session
+    session = None      # requests session
     index_url = "https://www.zhihu.com"                 # zhihu index url
     login_url = "https://www.zhihu.com/login/email"     # zhihu login url
-    name = ""           # user nick name
+    name = None           # user nick name
     # user name regular expression
     reg_name = r"<span\s+?class=\"name\"[^>]*?>(.*?)</span>"
     cookie_file = os.path.join(sys.path[0],"zhihu_cookie")    # file to store cookie
-    cookies = ""        # cookies
+    cookies = None        # cookies
 
     def __init__(self):
         # change script directory as working directory
