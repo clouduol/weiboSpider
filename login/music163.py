@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # login 163 music
-# weibo(https+ ajax+ username/passowrd+ rsa) login
+# weibo(https+ ajax+ username/passowrd+ rsa) Oauth login
 
 import requests
 import re
@@ -44,8 +44,8 @@ class Music163(object):
         self.wb_password = wb_password
         # set headers
         self.session.headers = self.headers
-        # weibo login Referer, not necessary
-        referer = self.getReferer()
+        # weibo login Referer and referer parse dict 
+        referer,refer_dict = self.getReferer()
         self.session.headers['Referer'] = referer
         # get su:username base64 code
         su = self.getSu(wb_name)
@@ -53,6 +53,85 @@ class Music163(object):
         (servertime,nonce,pubkey,rsakv) = self.prelogin(su)
         # get sp:password rsa encryption result
         sp = self.getSp(wb_password,servertime,nonce,pubkey)
+        # weibo login, get ticket
+        ticket = self.wbLogin(su,servertime,nonce,rsakv,sp)
+        # weibo Oauth
+        oauth_retcode = self.wbOauth(ticket,referer,refer_dict)
+        if oauth_retcode == 0:
+            print("Congratulations,Login successfully!")
+        print("==== parameters ====")
+        print("su:\t"+str(su))
+        print("sp:\t"+str(sp))
+        print("servertime:\t"+str(servertime))
+        print("nonce:\t"+str(nonce))
+        print("pubkey:\t"+str(pubkey))
+        print("rsakv:\t"+str(rsakv))
+        print("ticket:\t"+str(ticket))
+        print("referer:\t"+str(referer))
+        print("cookies:\t"+str(self.session.cookies))
+
+    # get weibo login Referer
+    def getReferer(self):
+        r = self.session.get(self.home_url)
+        # weibo api login url regular exp
+        reg_wblogin_url =\
+                r"<a.*?href=\"(http://music.163.com/api/sns/authorize\?snsType=2.*?)\".*?</a>"
+        wblogin_url = re.findall(reg_wblogin_url,r.text)
+        if len(wblogin_url) == 0:
+            print("Cann't get weibo login url in home page.")
+            sys.exit()
+        r = self.session.get(wblogin_url[0])
+        referer = r.url
+        refer_dict = {}
+        for param in referer.split("?")[1].split("&"):
+            item = param.split("=")
+            refer_dict[item[0]] = item[1]
+        print("Get weibo api login url successfully...")
+        return r.url,refer_dict
+
+    # get su: weibo name base64 code
+    def getSu(self,wb_name):
+        return base64.b64encode(wb_name.encode("utf-8")).decode("utf-8")
+
+    # prelogin
+    def prelogin(self,su):
+        params = {'checkpin': '1',
+                  'entry': 'openapi',
+                  'client':'ssologin.js(v1.4.18)',
+                  'callback':'sinaSSOController.preloginCallBack',
+                  'su': su,
+                  'rsakt': 'mod'
+                 }
+        prelogin_url = \
+                "https://login.sina.com.cn/sso/prelogin.php"
+        r = self.session.get(prelogin_url,params = params)
+        reg_prelogin = r"sinaSSOController\.preloginCallBack\((.*)\)"
+        resp_dict = eval(re.findall(reg_prelogin,r.text)[0])
+        # the retcode is "int"
+        if resp_dict['retcode'] != 0:
+            print("Prelogin response error happened")
+            sys.exit()
+        print("Weibo prelogin successfully...")
+        return (resp_dict['servertime'],resp_dict['nonce'],
+                resp_dict['pubkey'],resp_dict['rsakv'])
+
+    # get sp: pasword rsa encryption result
+    def getSp(self,wb_password,servertime,nonce,pubkey):
+        # set rsa public key
+        pubkey = int(pubkey,16)
+        # 65537 is the default e
+        pubkey = rsa.PublicKey(pubkey,65537)
+        # concatenate message to encrypt
+        message = str(servertime)+"\t"+str(nonce)+"\n"+str(wb_password)
+        # convert message to bytes
+        message = message.encode('utf-8')
+        sp = rsa.encrypt(message,pubkey)
+        # convert to hex
+        sp = binascii.b2a_hex(sp)
+        return sp
+
+    # wbLogin
+    def wbLogin(self,su,servertime,nonce,rsakv,sp):
         wbapi_login_url =\
         "https://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.18)&openapilogin=qrcode"
         wbapi_login_data = {"entry":"openapi",
@@ -82,81 +161,46 @@ class Music163(object):
                             "returntype":"TEXT"
                            }
         r = self.session.post(wbapi_login_url,data=wbapi_login_data)
-        print(self.session.cookies)
         # retcode is "str"
-        print(r.text)
-        if eval(r.text)['retcode'] != '0':
-            print("Login failed")
-            return -1
+        resp_dict = eval(r.text)
+        if resp_dict['retcode'] != '0':
+            print("Weibo login error happened")
+            sys.exit()
         else:
-            print("Congratulations, Login successfully!")
-            r = self.session.get(self.home_url)
-            print(r.request.headers)
+            print("Weibo login successfully...")
+            return resp_dict['ticket']
+
+    # wbOauth
+    def wbOauth(self,ticket,referer,refer_dict):
+        wb_oauth_url = "https://api.weibo.com/oauth2/authorize"
+        wb_oauth_data = {"action":"login",
+                         "display":"default",
+                         "withOfficalFlag":"0",
+                         "quick_auth":"false",
+                         "withOfficalAccount":"",
+                         "scope":refer_dict['scope'],
+                         "ticket":ticket,
+                         "isLoginSina":"",
+                         "response_type":refer_dict['response_type'],
+                         "regCallback":referer,
+                         "redirect_uri":refer_dict['redirect_uri'],
+                         "client_id":refer_dict['client_id'],
+                         "appkey62":"u6BYq",
+                         "state":refer_dict['state'],
+                         "verifyToken":"null",
+                         "from":"",
+                         "switchLogin":"0",
+                         "userId":"",
+                         "passwd":""
+                        }
+        r = self.session.post(wb_oauth_url,data=wb_oauth_data)
+        reg_oauth_code = r"^.*?\"code\":(\d*).*$"
+        oauth_code = re.findall(reg_oauth_code,r.text)
+        if len(oauth_code) != 0 and oauth_code[0] == '200':
+            print("Oauth successfully...")
             return 0
-        print(sp)
-        print(servertime)
-        print(nonce)
-        print(pubkey)
-        print(rsakv)
-        print(su)
-        print(referer)
-
-    # get weibo login Referer
-    def getReferer(self):
-        r = self.session.get(self.home_url)
-        # weibo api login url regular exp
-        reg_wblogin_url =\
-                r"<a.*?href=\"(http://music.163.com/api/sns/authorize\?snsType=2.*?)\".*?</a>"
-        wblogin_url = re.findall(reg_wblogin_url,r.text)
-        if len(wblogin_url) == 0:
-            print("Cann't get weibo login url in home page.")
-            sys.exit()
-        print(self.session.cookies)
-        r = self.session.get(wblogin_url[0])
-        print(self.session.cookies)
-        return r.url
-
-    # get su: weibo name base64 code
-    def getSu(self,wb_name):
-        return base64.b64encode(wb_name.encode("utf-8")).decode("utf-8")
-
-    # prelogin
-    def prelogin(self,su):
-        params = {'checkpin': '1',
-                  'entry': 'openapi',
-                  'client':'ssologin.js(v1.4.18)',
-                  'callback':'sinaSSOController.preloginCallBack',
-                  'su': su,
-                  'rsakt': 'mod'
-                 }
-        prelogin_url = \
-                "https://login.sina.com.cn/sso/prelogin.php"
-        r = self.session.get(prelogin_url,params = params)
-        print(self.session.cookies)
-        reg_prelogin = r"sinaSSOController\.preloginCallBack\((.*)\)"
-        resp_dict = eval(re.findall(reg_prelogin,r.text)[0])
-        # the retcode is "int"
-        if resp_dict['retcode'] != 0:
-            print("Prelogin response error happened")
-            sys.exit()
-        return (resp_dict['servertime'],resp_dict['nonce'],
-                resp_dict['pubkey'],resp_dict['rsakv'])
-
-    # get sp: pasword rsa encryption result
-    def getSp(self,wb_password,servertime,nonce,pubkey):
-        # set rsa public key
-        pubkey = int(pubkey,16)
-        # 65537 is the default e
-        pubkey = rsa.PublicKey(pubkey,65537)
-        # concatenate message to encrypt
-        message = str(servertime)+"\t"+str(nonce)+"\n"+str(wb_password)
-        # convert message to bytes
-        message = message.encode('utf-8')
-        sp = rsa.encrypt(message,pubkey)
-        # convert to hex
-        sp = binascii.b2a_hex(sp)
-        return sp
-
+        else:
+            return -1
 
     # login function, by cookie
     def login_by_cookie(self):
