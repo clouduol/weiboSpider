@@ -27,10 +27,10 @@ class Qzone(object):
                "Connection":"keep-alive"
               }
     cookies = None          # cookies
-    cookie_file = os.path.join(sys.path[0],"qzone_cookie")  # cookie file path
+    cookie_file = os.path.join(sys.path[0],".cookie_qzone")  # cookie file path
     session = None          # session object
     qq_number = None        # qq number
-    qzone_url_pref = "http://user.qzone.qq.com/"     # qzone url prefix
+    qzone_url_pref = "https://user.qzone.qq.com/"     # qzone url prefix
     qzone_url = None                            # qzone url
     qzone_bsOjb = None
     title = None                                # qzone title
@@ -59,7 +59,9 @@ class Qzone(object):
                 print("Try to login %s failed. Test blocked" % self.qzone_url)
                 return -1
         else:
-            print("Can't find %s, please create it first!" % self.cookie_file)
+            print("Can't find " + self.cookie_file +
+                  ", please create it first! You should copy cookie in page "+
+                  self.qzone_url + " into it.")
             return -1
 
     def get_title(self):
@@ -82,10 +84,17 @@ class Qzone(object):
             sslist = []
             for sslist_tag in sslist_tags:
                 ssentity = []
-                ss_user =\
-                sslist_tag.find("div",{"class":"f-nick"}).get_text().strip()
-                ss_content =\
-                sslist_tag.find("div",{"class":"f-info"}).get_text().strip()
+                nick_tag = sslist_tag.find("div",{"class":"f-nick"})
+                info_tag = sslist_tag.find("div",{"class":"f-info"})
+                # prevent noneType
+                if nick_tag is None:
+                    ss_user=""
+                else:
+                    ss_user = nick_tag.get_text().strip()
+                if info_tag is None:
+                    ss_content=""
+                else:
+                    ss_content = info_tag.get_text().strip()
                 ssentity.append(ss_user)
                 ssentity.append(ss_content)
                 sslist.append(ssentity)
@@ -96,7 +105,7 @@ class Qzone(object):
 
 if __name__ == "__main__":
     qzone = Qzone()
-    print("Input your QQ number:")
+    print("Input your QQ number:",end="")
     qq_number = input()
     if qzone.login_by_cookie(qq_number) == 0:
         print("Login successfully!")
