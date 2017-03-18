@@ -224,15 +224,29 @@ class Music163(object):
         r = self.session.get(user_url)
         bsObj=BeautifulSoup(r.text,"lxml")
         # weibo nick name
-        wb_nick=bsObj.find('h2').find('span').get_text().strip(" \n\t")
+        nick_tag = bsObj.find('h2').find('span')
+        if nick_tag is None:
+            wb_nick="weibo nick is null"
+        else:
+            wb_nick=nick_tag.get_text().strip(" \n\t")
         # weibo disc
-        wb_disc=bsObj.find('div',{'class','inf s-fc3 f-brk'})\
-                        .get_text().strip(" \n\t")
+        disc_tag = bsObj.find('div',{'class','inf s-fc3 f-brk'})
+        if disc_tag is None:
+            wb_disc="weibo disc is null"
+        else:
+            wb_disc=disc_tag.get_text().strip(" \n\t")
         # weibo location
-        wb_location=bsObj.find('div',{'class','inf s-fc3'})\
-                        .get_text().strip(" \n\t")
+        loca_tag = bsObj.find('div',{'class','inf s-fc3'})
+        if loca_tag is None:
+            wb_location="weibo location is null"
+        else:
+            wb_location=loca_tag.get_text().strip(" \n\t")
         # song count
-        song_count=bsObj.find('h4').get_text().strip(" \n\t")
+        sc_tag = bsObj.find('h4')
+        if sc_tag is None:
+            song_count="song count is null"
+        else:
+            song_count=sc_tag.get_text().strip(" \n\t")
         return (wb_nick,wb_disc,wb_location,song_count)
 
     # login function, by cookie
