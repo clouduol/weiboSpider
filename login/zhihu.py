@@ -9,6 +9,7 @@ import time
 import json
 import os
 import sys
+import getpass
 
 class Zhihu(object):
     # object data, public
@@ -31,7 +32,7 @@ class Zhihu(object):
     name = None           # user nick name
     # user name regular expression
     reg_name = r"<span\s+?class=\"name\"[^>]*?>(.*?)</span>"
-    cookie_file = os.path.join(sys.path[0],"zhihu_cookie")    # file to store cookie
+    cookie_file = os.path.join(sys.path[0],".cookie_zhihu")    # file to store cookie
     cookies = None        # cookies
 
     def __init__(self):
@@ -114,12 +115,12 @@ class Zhihu(object):
 if __name__ == "__main__":
     zhihu = Zhihu()
     if zhihu.find_cookie_file():
-        print("Login by cookie")
+        print("Login by cookie, please guarantee "+
+             "it is within the effective period.")
         zhihu.login_by_cookie()
     else:
-        print("Input your email:")
+        print("Email:",end="")
         email = input()
-        print("Input your password:")
-        password = input()
+        password = getpass.getpass("Password:")
         zhihu.login(email,password)
     zhihu.get_username()
