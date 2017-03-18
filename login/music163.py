@@ -57,18 +57,28 @@ class Music163(object):
         ticket = self.wbLogin(su,servertime,nonce,rsakv,sp)
         # weibo Oauth
         oauth_retcode = self.wbOauth(ticket,referer,refer_dict)
+        # print parameters, tuning parameter:0-don't print;other-print
+        print_paras = 0
+        if print_paras:
+            print("================= parameters begin ================")
+            print("su:\t"+str(su))
+            print("sp:\t"+str(sp))
+            print("servertime:\t"+str(servertime))
+            print("nonce:\t"+str(nonce))
+            print("pubkey:\t"+str(pubkey))
+            print("rsakv:\t"+str(rsakv))
+            print("ticket:\t"+str(ticket))
+            print("referer:\t"+str(referer))
+            print("cookies:\t"+str(self.session.cookies))
+            print("================= parameters end  ================")
         if oauth_retcode == 0:
             print("Congratulations,Login successfully!")
-        print("==== parameters ====")
-        print("su:\t"+str(su))
-        print("sp:\t"+str(sp))
-        print("servertime:\t"+str(servertime))
-        print("nonce:\t"+str(nonce))
-        print("pubkey:\t"+str(pubkey))
-        print("rsakv:\t"+str(rsakv))
-        print("ticket:\t"+str(ticket))
-        print("referer:\t"+str(referer))
-        print("cookies:\t"+str(self.session.cookies))
+            # remove Referer from headers
+            del self.session.headers['Referer']
+            return 0
+        else:
+            print("Some errors happened, Login failed.")
+            return 1
 
     # get weibo login Referer
     def getReferer(self):
@@ -202,6 +212,27 @@ class Music163(object):
         else:
             return -1
 
+    # get evidence to confirm login successfully
+    def getEvidence(self):
+        discover_url=self.home_url+"/discover"
+        r = self.session.get(discover_url)
+        bsObj = BeautifulSoup(r.text,"lxml")
+        user_url_suffix=bsObj.find('h4').find('a').attrs['href']
+        user_url = self.home_url+user_url_suffix
+        r = self.session.get(user_url)
+        bsObj=BeautifulSoup(r.text,"lxml")
+        # weibo nick name
+        wb_nick=bsObj.find('h2').find('span').get_text().strip(" \n\t")
+        # weibo disc
+        wb_disc=bsObj.find('div',{'class','inf s-fc3 f-brk'})\
+                        .get_text().strip(" \n\t")
+        # weibo location
+        wb_location=bsObj.find('div',{'class','inf s-fc3'})\
+                        .get_text().strip(" \n\t")
+        # song count
+        song_count=bsObj.find('h4').get_text().strip(" \n\t")
+        return (wb_nick,wb_disc,wb_location,song_count)
+
     # login function, by cookie
     def login_by_cookie(self):
         pass
@@ -211,4 +242,8 @@ if __name__ == "__main__":
     print("weibo name: ",end="")
     wb_name = input()
     wb_password = getpass.getpass("weibo password: ")
-    music163.login(wb_name,wb_password)
+    if music163.login(wb_name,wb_password)==0:
+        evidence=music163.getEvidence()
+        print("Evidence:")
+        for item in evidence:
+            print(item)
