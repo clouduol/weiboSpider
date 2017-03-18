@@ -12,6 +12,7 @@ import base64
 import rsa
 import binascii
 import getpass
+import json
 
 class Music163(object):
     # session headers
@@ -26,24 +27,24 @@ class Music163(object):
                "Accept-Language":"en-US,en;q=0.8",
                "Connection":"keep-alive"
               }
-    cookies = None          # session cookies
-    cookie_file = os.path.join(sys.path[0],"music163_cookie")  # cookie file path
     session = None          # session object
     wb_name = None          # weibo name
     wb_password = None      # weibo password 
     home_url = "http://music.163.com"       # music home url
+    cookies = None          # session cookies
+    cookie_file = os.path.join(sys.path[0],".cookie_music163")  # cookie file path
 
     # constructor function
     def __init__(self):
         os.chdir(sys.path[0])
         self.session = requests.session()
+        # set headers
+        self.session.headers = self.headers
 
     # login function,by weibo user name and password
     def login(self,wb_name,wb_password):
         self.wb_name = wb_name
         self.wb_password = wb_password
-        # set headers
-        self.session.headers = self.headers
         # weibo login Referer and referer parse dict 
         referer,refer_dict = self.getReferer()
         self.session.headers['Referer'] = referer
@@ -75,6 +76,7 @@ class Music163(object):
             print("Congratulations,Login successfully!")
             # remove Referer from headers
             del self.session.headers['Referer']
+            self.__store_cookie()
             return 0
         else:
             print("Some errors happened, Login failed.")
@@ -235,14 +237,51 @@ class Music163(object):
 
     # login function, by cookie
     def login_by_cookie(self):
-        pass
+        self.cookies = self.__load_cookie()
+        if self.cookies is None:
+            print("Load cookies error")
+            return -1
+        # set session cookie
+        self.session.cookies.update(self.cookies)
+        print("Load cookies from %s successfully!" % self.cookie_file)
+        return 0
+
+    # Serialize cookie to file
+    def __store_cookie(self):
+        with open(self.cookie_file,'w') as f:
+            cookies = self.session.cookies.get_dict()
+            json.dump(cookies,f)
+            print("Cookies stored into %s successfully!" % self.cookie_file)
+
+    # Deserialize cookie from file
+    def __load_cookie(self):
+        if os.path.exists(self.cookie_file):
+            with open(self.cookie_file,'r') as f:
+                cookies = json.load(f)
+                return cookies
+        else:
+            return None
+
+    # if exists cookie file
+    def find_cookie_file(self):
+        if os.path.exists(self.cookie_file):
+            return True
+        else:
+            return False
 
 if __name__ == "__main__":
     music163 = Music163()
-    print("weibo name: ",end="")
-    wb_name = input()
-    wb_password = getpass.getpass("weibo password: ")
-    if music163.login(wb_name,wb_password)==0:
+    login_retcode = 1
+    if music163.find_cookie_file():
+        print("Login by cookie, please guarantee "+
+              "it is within the effective period.")
+        login_retcode=music163.login_by_cookie()
+    else:
+        print("weibo name: ",end="")
+        wb_name = input()
+        wb_password = getpass.getpass("weibo password: ")
+        login_retcode=music163.login(wb_name,wb_password)
+    if login_retcode==0:
         evidence=music163.getEvidence()
         print("Evidence:")
         for item in evidence:
