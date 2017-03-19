@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # clean data from wikipedia to n-grams format
+# then using common word filter and find first sentence of the top 5 n-grams
 
 import string
 from urllib.request import urlopen
