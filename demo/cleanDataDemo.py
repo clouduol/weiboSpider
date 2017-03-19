@@ -15,6 +15,27 @@ print_count = 20
 
 # functions
 
+# ngram(list) contains common word or not
+def isCommon(ngram):
+    commonWords = ["the", "be", "and", "of", "a", "in", "to", "have", "it",
+                   "i", "that", "for", "you", "he", "with", "on", "do", "say",
+                   "this", "they", "is", "an", "at", "but","we", "his", "from",
+                   "that", "not", "by", "she", "or", "as", "what", "go",
+                   "their","can", "who", "get", "if", "would", "her", "all",
+                   "my", "make", "about", "know", "will","as", "up", "one",
+                   "time", "has", "been", "there", "year", "so", "think",
+                   "when", "which", "them", "some", "me", "people", "take",
+                   "out", "into", "just", "see", "him", "your", "come",
+                   "could", "now", "than", "like", "other", "how", "then",
+                   "its", "our", "two", "more", "these", "want", "way", "look",
+                   "first", "also", "new", "because", "day", "more", "use",
+                   "no", "man", "find", "here", "thing", "give", "many",
+                   "well"]
+    for word in ngram:
+        if word.lower() in commonWords:
+            return True
+    return False
+
 # cleanInput, return list, element:word
 def cleanInput(input):
     #input = input.lower()           # avoid case sensitive
@@ -37,6 +58,10 @@ def getNparams(input,n):
     input = cleanInput(input)
     output = dict()
     for i in range(len(input)-n+1):
+        # filter common word
+        if isCommon(input[i:i+n]):
+            continue
+        # update dict element
         ngram = " ".join(input[i:i+n])
         if ngram in output:
             output[ngram]+=1
