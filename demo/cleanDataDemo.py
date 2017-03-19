@@ -9,32 +9,11 @@ from collections import OrderedDict
 import re
 
 # params
-wiki_url = "https://en.wikipedia.org/wiki/FC_Barcelona"
+wiki_url = "https://en.wikipedia.org/wiki/Beijing"
 grams_count = 2
 print_count = 20
 
 # functions
-
-# ngram(list) contains common word or not
-def isCommon(ngram):
-    commonWords = ["the", "be", "and", "of", "a", "in", "to", "have", "it",
-                   "i", "that", "for", "you", "he", "with", "on", "do", "say",
-                   "this", "they", "is", "an", "at", "but","we", "his", "from",
-                   "that", "not", "by", "she", "or", "as", "what", "go",
-                   "their","can", "who", "get", "if", "would", "her", "all",
-                   "my", "make", "about", "know", "will","as", "up", "one",
-                   "time", "has", "been", "there", "year", "so", "think",
-                   "when", "which", "them", "some", "me", "people", "take",
-                   "out", "into", "just", "see", "him", "your", "come",
-                   "could", "now", "than", "like", "other", "how", "then",
-                   "its", "our", "two", "more", "these", "want", "way", "look",
-                   "first", "also", "new", "because", "day", "more", "use",
-                   "no", "man", "find", "here", "thing", "give", "many",
-                   "well"]
-    for word in ngram:
-        if word.lower() in commonWords:
-            return True
-    return False
 
 # cleanInput, return list, element:word
 def cleanInput(input):
@@ -69,19 +48,47 @@ def getNparams(input,n):
             output[ngram]=1
     return output
 
+# ngram(list) contains common word or not
+def isCommon(ngram):
+    commonWords = ["the", "be", "and", "of", "a", "in", "to", "have", "it",
+                   "i", "that", "for", "you", "he", "with", "on", "do", "say",
+                   "this", "they", "is", "an", "at", "but","we", "his", "from",
+                   "that", "not", "by", "she", "or", "as", "what", "go",
+                   "their","can", "who", "get", "if", "would", "her", "all",
+                   "my", "make", "about", "know", "will","as", "up", "one",
+                   "time", "has", "been", "there", "year", "so", "think",
+                   "when", "which", "them", "some", "me", "people", "take",
+                   "out", "into", "just", "see", "him", "your", "come",
+                   "could", "now", "than", "like", "other", "how", "then",
+                   "its", "our", "two", "more", "these", "want", "way", "look",
+                   "first", "also", "new", "because", "day", "more", "use",
+                   "no", "man", "find", "here", "thing", "give", "many",
+                   "well","retrieved"]
+    for word in ngram:
+        if word.lower() in commonWords:
+            return True
+    return False
+
+# get first sentence that contains ngram(str)
+def getFirstSentence(ngram_str,content):
+    sentences = content.split(".")
+    for sentence in sentences:
+        if ngram_str in sentence:
+            return sentence
+    return ""
+
 # main function
 html = urlopen(wiki_url)
 bsObj = BeautifulSoup(html,"lxml")
 content = bsObj.find("div",{"id":"mw-content-text"}).get_text()
 ngrams = getNparams(content,grams_count)
-# get ordered dict
-ngrams = OrderedDict(sorted(ngrams.items(),key=lambda t:t[1], reverse = True))
+# get sorted list
+ngrams = sorted(ngrams.items(),key=lambda t:t[1], reverse = True)
 print("The wiki page is: " + wiki_url)
 print(str(grams_count)+"-grams count is: "+str(len(ngrams)))
-i = 0
-for item in ngrams.items():
-    i+=1
-    if i <= print_count:
-        print(item)
-    else:
-        break
+print("Top +"+str(print_count)+" ngrams")
+for i in range(print_count):
+    print(ngrams[i])
+print("Top 5 ngrams and their first sentence")
+for i in range(5):
+    print(ngrams[i][0]+" : "+getFirstSentence(ngrams[i][0],content))
