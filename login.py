@@ -5,6 +5,7 @@
 # weibo.com : login->crossDomain->access weibo.com successfully
 # weibo.cn :  login->crossDomain->access weibo.cn to access another addr->
 #               access and redirect to weibo.cn
+# use cookie method, weibo.com will login successfully,but weibo.cn failed
 
 import requests
 import re
