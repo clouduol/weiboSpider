@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 # login sina weibo
 # https + ajax + (username + base64)/(passowrd + rsa)
+# weibo.com : login->crossDomain->access weibo.com successfully
+# weibo.cn :  login->crossDomain->access weibo.cn to access another addr->
+#               access and redirect to weibo.cn
 
 import requests
 import re
@@ -170,6 +173,11 @@ class Login(object):
                 if self.print_ret_json:
                     print(domainUrl)
                     print(r.text)
+            # for weibo.cn
+            re_cdAction = r"location.replace\('(.*?)'\)"
+            r = self.session.get("https://weibo.cn")
+            cdAction = re.findall(re_cdAction,r.text)[0]
+            r = self.session.get(cdAction)
             print("Weibo cross domain access successfully...")
             return ret_code
         except Exception as e:
