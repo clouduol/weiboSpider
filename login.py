@@ -15,6 +15,8 @@ import getpass
 import json
 
 class Login(object):
+    wb_uid = None   # weibo uid
+    wb_nick = None  # weibo nick
     # session headers
     headers = {"User-Agent":
                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML,\
@@ -34,6 +36,8 @@ class Login(object):
     prelogin_url = "https://login.sina.com.cn/sso/prelogin.php" # prelogin url
     cookies = None          # session cookies
     cookie_file = os.path.join(os.getcwd(),".cookies_weibo")  # cookie file path
+    print_ret_json = False
+    print_paras = False
 
     # constructor function
     def __init__(self):
@@ -52,11 +56,11 @@ class Login(object):
         (servertime,nonce,pubkey,rsakv) = self.prelogin(su)
         # get sp:password rsa encryption result
         sp = self.getSp(wb_password,servertime,nonce,pubkey)
-        # weibo login, get ticket
-        login_retcode = self.login(su,servertime,nonce,rsakv,sp)
-        # print parameters, tuning parameter:0-don't print;other-print
-        print_paras = 1
-        if print_paras:
+        # weibo account login
+        self.wb_uid,self.wb_nick,crossDomainUrlList = self.login(su,servertime,nonce,rsakv,sp)
+        # weibo cross domain
+        login_retcode = self.crossDomain(crossDomainUrlList)
+        if self.print_paras:
             print("================= parameters begin ================")
             print("su:\t"+str(su))
             print("sp:\t"+str(sp))
@@ -65,6 +69,8 @@ class Login(object):
             print("pubkey:\t"+str(pubkey))
             print("rsakv:\t"+str(rsakv))
             print("cookies:\t"+str(self.session.cookies))
+            print("uid:\t"+str(self.wb_uid))
+            print("nick:\t"+str(self.wb_nick))
             print("================= parameters end  ================")
         if login_retcode == 0:
             print("Congratulations,Login successfully!")
@@ -83,8 +89,9 @@ class Login(object):
                   'rsakt': 'mod'
                  }
         r = self.session.get(self.prelogin_url,params = params)
-        print("prelogin")
-        print(r.text)
+        if self.print_ret_json:
+            print("prelogin return json")
+            print(r.text)
         reg_prelogin = r"sinaSSOController\.preloginCallBack\((.*)\)"
         resp_dict = eval(re.findall(reg_prelogin,r.text)[0])
         # the retcode is "int"
@@ -139,24 +146,41 @@ class Login(object):
                        }
         login_params = {"client":"ssologin.js(v1.4.15)"}
         r = self.session.post(self.login_url,params=login_params,data=login_data)
-        print("login")
-        print(r.text)
+        if self.print_ret_json:
+            print("login return json")
+            print(r.text)
         # retcode is "str"
         resp_dict = eval(r.text)
         if resp_dict['retcode'] != '0':
-            print("Weibo login error happened")
-            return -1
+            print("Weibo account login error happened")
+            sys.exit()
         else:
             print("Weibo login successfully...")
-            return 0
+            uid = resp_dict['uid']
+            nick = resp_dict['nick']
+            return uid,nick,resp_dict['crossDomainUrlList']
+
+    # crossdomain , to get cookie
+    def crossDomain(self,crossDomainUrlList):
+        ret_code = 0
+        try:
+            for domainUrl in crossDomainUrlList:
+                domainUrl = re.sub(r"\\","",domainUrl)
+                r = self.session.get(domainUrl)
+                if self.print_ret_json:
+                    print(domainUrl)
+                    print(r.text)
+            return ret_code
+        except Exception as e:
+            print("CrossDomain exception found: %s" % e)
+            ret_code = -1
+            return ret_code
 
     # get evidence to confirm login successfully
     def getEvidence(self):
-        #self.session.headers['User-Agent'] += 'googlebot'
         r = self.session.get(self.home_url)
-        #print(r.text)
         try:
-            re_nick = r"$CONFIG['nick']='(.*?)';"
+            re_nick = r"\$CONFIG\['nick'\]='(.*?)';"
             nick = re.findall(re_nick,r.text)
         except Exception as e:
             print("Exception found: %s " % e)
@@ -164,7 +188,7 @@ class Login(object):
         if len(nick) == 1:
             return nick[0]
         else:
-            print("Error found")
+            print("Match error found")
             return None
 
     # login function, by cookie
@@ -204,6 +228,7 @@ class Login(object):
 if __name__ == "__main__":
     if (len(sys.argv) > 2) or (len(sys.argv) == 2 and sys.argv[1] != "cookie"):
         print("Usage: python3 login.py [cookie]")
+        sys.exit()
     wbLogin = Login()
     login_retcode = 1
     if len(sys.argv) == 1:
