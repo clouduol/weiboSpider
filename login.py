@@ -155,7 +155,7 @@ class Login(object):
             print("Weibo account login error happened")
             sys.exit()
         else:
-            print("Weibo login successfully...")
+            print("Weibo account login successfully...")
             uid = resp_dict['uid']
             nick = resp_dict['nick']
             return uid,nick,resp_dict['crossDomainUrlList']
@@ -170,6 +170,7 @@ class Login(object):
                 if self.print_ret_json:
                     print(domainUrl)
                     print(r.text)
+            print("Weibo cross domain access successfully...")
             return ret_code
         except Exception as e:
             print("CrossDomain exception found: %s" % e)
@@ -200,7 +201,21 @@ class Login(object):
         # set session cookie
         self.session.cookies.update(self.cookies)
         print("Load cookies from %s successfully!" % self.cookie_file)
-        return 0
+        # get uid and nick
+        re_nick = r"\$CONFIG\['onick'\]='(.*?)';"
+        re_uid= r"\$CONFIG\['oid'\]='(.*?)';"
+        try:
+            r = self.session.get(self.home_url)
+            nick = re.findall(re_nick,r.text)
+            uid = re.findall(re_uid,r.text)
+            if len(nick) != 1 or len(uid) != 1:
+                return -1
+            self.wb_uid = uid[0]
+            self.wb_nick = nick[0]
+            return 0
+        except Exception as e:
+            print("Exception found: %s" % e)
+            return -1
 
     # Serialize cookie to file
     def __store_cookie(self):
