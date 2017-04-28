@@ -27,7 +27,7 @@ class FollowFans(Login):
             followTables = bsObj.findAll("table")
             if len(followTables) == 0:
                 break
-            print("page"+str(page)+"\tcount:"+str(len(followTables)))
+            #print("page"+str(page)+"\tcount:"+str(len(followTables)))
             for followTable in followTables:
                 followUnit = dict()
                 self.followCount += 1
