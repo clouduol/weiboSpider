@@ -204,7 +204,7 @@ class Login(object):
 if __name__ == "__main__":
     if (len(sys.argv) > 2) or (len(sys.argv) == 2 and sys.argv[1] != "cookie"):
         print("Usage: python3 login.py [cookie]")
-    wblogin = Login()
+    wbLogin = Login()
     login_retcode = 1
     if len(sys.argv) == 1:
         print("weibo name: ",end="")
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     else:
         if not wbLogin.find_cookie_file():
             print("Cannot find cookie file: %s" % wbLogin.cookie_file)
-            sys.exit() 
+            sys.exit()
         login_retcode=wbLogin.login_by_cookie()
     if login_retcode == 0:
         evidence=wbLogin.getEvidence()
