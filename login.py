@@ -8,6 +8,8 @@
 # use cookie method, weibo.com will login successfully,but weibo.cn failed
 
 import requests
+import requests.utils
+import pickle
 import re
 import sys
 import os
@@ -23,10 +25,9 @@ class Login(object):
     wb_nick = None  # weibo nick
     # session headers
     headers = {"User-Agent":
-               "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML,\
-               like\
-               Gecko) Ubuntu Chromium/56.0.2924.76 Chrome/56.0.2924.76\
-               Safari/537.36",
+               "Mozilla/5.0 (X11; Linux x86_64) "+\
+               "AppleWebKit/537.36 (KHTML, like Gecko) "+\
+               "Ubuntu Chromium/56.0.2924.76 Chrome/56.0.2924.76 Safari/537.36",
                "Accept":"*/*",
                "Accept-Encoding":"gzip, deflate, sdch",
                "Accept-Language":"en-US,en;q=0.8",
@@ -38,7 +39,6 @@ class Login(object):
     home_url = "https://weibo.com"       # weibo home url
     login_url = "https://login.sina.com.cn/sso/login.php"   # login url
     prelogin_url = "https://login.sina.com.cn/sso/prelogin.php" # prelogin url
-    cookies = None          # session cookies
     cookie_file = os.path.join(os.getcwd(),".cookies_weibo")  # cookie file path
     print_ret_json = False
     print_paras = False
@@ -203,12 +203,13 @@ class Login(object):
 
     # login function, by cookie
     def login_by_cookie(self):
-        self.cookies = self.__load_cookie()
-        if self.cookies is None:
+        # set session cookie
+        jar = requests.cookies.RequestsCookieJar()
+        jar._cookies = self.__load_cookie()
+        self.session.cookies = jar
+        if self.session.cookies is None:
             print("Load cookies error")
             return -1
-        # set session cookie
-        self.session.cookies.update(self.cookies)
         print("Load cookies from %s successfully!" % self.cookie_file)
         # get uid and nick
         re_nick = r"\$CONFIG\['onick'\]='(.*?)';"
@@ -228,16 +229,16 @@ class Login(object):
 
     # Serialize cookie to file
     def __store_cookie(self):
-        with open(self.cookie_file,'w') as f:
-            cookies = self.session.cookies.get_dict()
-            json.dump(cookies,f)
+        with open(self.cookie_file,'wb') as f:
+            f.truncate()
+            pickle.dump(self.session.cookies._cookies, f)
             print("Cookies stored into %s successfully!" % self.cookie_file)
 
     # deserialize cookie from file
     def __load_cookie(self):
         if os.path.exists(self.cookie_file):
-            with open(self.cookie_file,'r') as f:
-                cookies = json.load(f)
+            with open(self.cookie_file,'rb') as f:
+                cookies = pickle.load(f)
                 return cookies
         else:
             return None
