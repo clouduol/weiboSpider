@@ -46,6 +46,38 @@ class FollowFans(Login):
             print("%s%s粉丝人数:%s" %(followUnit['nick'].ljust(40),\
                 followUnit['homeUrl'].ljust(40),followUnit['fansCount'].ljust(20)))
 
+    # get fans 
+    # return fans count 
+    def getFans(self):
+        fansUrl = self.ffHomeUrl + "/" + self.wb_uid +"/fans"
+        re_fansCount = r"粉丝(.*?)人"
+        page = 0
+        while True:
+            page += 1
+            params={'page':str(page)}
+            r = self.session.get(fansUrl,params=params)
+            bsObj = BeautifulSoup(r.text,"lxml")
+            fansTables = bsObj.findAll("table")
+            if len(fansTables) == 0:
+                break
+            #print("page"+str(page)+"\tcount:"+str(len(fansTables)))
+            for fansTable in fansTables:
+                fansUnit = dict()
+                self.fansCount += 1
+                targetTag = fansTable.find("td").next_sibling
+                fansUnit['nick'] = targetTag.find("a").get_text()
+                fansUnit['homeUrl'] = targetTag.find("a").attrs["href"]
+                fansUnit['fansCount'] = \
+                        re.findall(re_fansCount,targetTag.get_text())[0]
+                self.fansList.append(fansUnit)
+        return self.fansCount
+
+    # print fans
+    def printFans(self):
+        print("Fans Count:\t" + str(self.fansCount))
+        for fansUnit in self.fansList:
+            print("%s%s粉丝人数:%s" %(fansUnit['nick'].ljust(40),\
+                fansUnit['homeUrl'].ljust(40),fansUnit['fansCount'].ljust(20)))
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -59,4 +91,6 @@ if __name__ == "__main__":
     login_retcode = wbFF.login_by_up(wb_name,wb_password)
     if login_retcode == 0:
         wbFF.getFollow()
+        wbFF.getFans()
         wbFF.printFollow()
+        wbFF.printFans()
