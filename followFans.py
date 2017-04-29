@@ -4,6 +4,7 @@
 # use class Login
 
 from login import *
+import unicodedata
 
 class FollowFans(Login):
     # list unit:{'nick': , 'homeUrl': ,'fansCount': }
@@ -43,8 +44,11 @@ class FollowFans(Login):
     def printFollow(self):
         print("Follow Count:\t" + str(self.followCount))
         for followUnit in self.followList:
-            print("%s%s粉丝人数:%s" %(followUnit['nick'].ljust(40),\
-                followUnit['homeUrl'].ljust(40),followUnit['fansCount'].ljust(20)))
+            nickLen = 40 - self.wide_chars(followUnit['nick'])
+            homeUrlLen = 40 - self.wide_chars(followUnit['homeUrl'])
+            fansCountLen = 20 - self.wide_chars(followUnit['fansCount'])
+            print("%s%s粉丝人数:%s" %(followUnit['nick'].ljust(nickLen),\
+                followUnit['homeUrl'].ljust(homeUrlLen),followUnit['fansCount'].ljust(fansCountLen)))
 
     # get fans 
     # return fans count 
@@ -76,8 +80,15 @@ class FollowFans(Login):
     def printFans(self):
         print("Fans Count:\t" + str(self.fansCount))
         for fansUnit in self.fansList:
-            print("%s%s粉丝人数:%s" %(fansUnit['nick'].ljust(40),\
-                fansUnit['homeUrl'].ljust(40),fansUnit['fansCount'].ljust(20)))
+            nickLen = 40 - self.wide_chars(fansUnit['nick'])
+            homeUrlLen = 40 - self.wide_chars(fansUnit['homeUrl'])
+            fansCountLen = 20 - self.wide_chars(fansUnit['fansCount'])
+            print("%s%s粉丝人数:%s" %(fansUnit['nick'].ljust(nickLen),\
+                fansUnit['homeUrl'].ljust(homeUrlLen),fansUnit['fansCount'].ljust(fansCountLen)))
+
+    # get full-with chinese character count
+    def wide_chars(self,s):
+        return sum(unicodedata.east_asian_width(x)=='W' for x in s)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
