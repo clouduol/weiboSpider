@@ -91,17 +91,28 @@ class FollowFans(Login):
         return sum(unicodedata.east_asian_width(x)=='W' for x in s)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        print("Usage: python3 followFans.py")
+    if (len(sys.argv) > 2) or (len(sys.argv) == 2 and sys.argv[1] != "cookie"):
+        print("Usage: python3 followFans.py [cookie]")
         sys.exit()
     wbFF = FollowFans()
     login_retcode = 1
-    print("weibo name: ",end="")
-    wb_name = input()
-    wb_password = getpass.getpass("weibo password: ")
-    login_retcode = wbFF.login_by_up(wb_name,wb_password)
-    if login_retcode == 0:
-        wbFF.getFollow()
-        wbFF.getFans()
-        wbFF.printFollow()
-        wbFF.printFans()
+    if len(sys.argv) == 1:
+        print("weibo name: ",end="")
+        wb_name = input()
+        wb_password = getpass.getpass("weibo password: ")
+        login_retcode = wbFF.login_by_up(wb_name,wb_password)
+        if login_retcode == 0:
+            wbFF.getFollow()
+            wbFF.getFans()
+            wbFF.printFollow()
+            wbFF.printFans()
+    else:
+        if not wbFF.find_cookie_file():
+            print("Cannot find cookie file: %s" % wbFF.cookie_file)
+            sys.exit()
+        login_retcode = wbFF.login_by_cookie()
+        if login_retcode == 0:
+            wbFF.getFollow()
+            wbFF.getFans()
+            wbFF.printFollow()
+            wbFF.printFans()
